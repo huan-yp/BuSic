@@ -35,5 +35,11 @@ class PlayerState with _$PlayerState {
 
     /// Index of the current track in the queue.
     @Default(0) int currentIndex,
+
+    /// Currently playing playlist name (for display).
+    String? playlistName,
+
+    /// Currently playing playlist ID.
+    int? playlistId,
   }) = _PlayerState;
 }

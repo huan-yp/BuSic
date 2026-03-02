@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../shared/extensions/context_extensions.dart';
 import '../../auth/application/auth_notifier.dart';
@@ -153,8 +154,9 @@ class SettingsScreen extends ConsumerWidget {
               return ListTile(
                 leading: const Icon(Icons.person_outline),
                 title: Text(l10n.login),
+                trailing: const Icon(Icons.chevron_right),
                 onTap: () {
-                  // Navigate to login
+                  context.go('/login');
                 },
               );
             },

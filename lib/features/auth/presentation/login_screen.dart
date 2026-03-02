@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../application/auth_notifier.dart';
+import '../../../core/utils/platform_utils.dart';
 import '../../../shared/extensions/context_extensions.dart';
 
 /// Login screen with QR code display for Bilibili authentication.
@@ -19,11 +21,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   String _statusText = '';
   bool _isLoading = false;
   bool _isExpired = false;
+  bool _initialized = false;
 
   @override
-  void initState() {
-    super.initState();
-    _generateQrCode();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _initialized = true;
+      _generateQrCode();
+    }
   }
 
   Future<void> _generateQrCode() async {
@@ -33,7 +39,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _statusText = context.l10n.scanToLogin;
     });
     try {
-      final url = await ref.read(authNotifierProvider.notifier).login();
+      final url = await ref.read(authNotifierProvider.notifier).login(
+        onScanned: () {
+          if (mounted) {
+            setState(() {
+              _statusText = '已扫码，请在手机上确认';
+            });
+          }
+        },
+        onExpired: () {
+          if (mounted) {
+            setState(() {
+              _isExpired = true;
+              _statusText = '二维码已过期，请刷新';
+            });
+          }
+        },
+      );
       setState(() {
         _qrUrl = url;
         _isLoading = false;
@@ -69,7 +91,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/'),
         ),
-        title: Text(context.l10n.login),
+        title: GestureDetector(
+          onPanStart: PlatformUtils.isDesktop
+              ? (_) => windowManager.startDragging()
+              : null,
+          child: Text(context.l10n.login),
+        ),
+        titleSpacing: 0,
+        flexibleSpace: PlatformUtils.isDesktop
+            ? GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onPanStart: (_) => windowManager.startDragging(),
+              )
+            : null,
+        actions: [
+          if (PlatformUtils.isDesktop) ...[
+            IconButton(
+              icon: const Icon(Icons.minimize, size: 18),
+              onPressed: () => windowManager.minimize(),
+            ),
+            IconButton(
+              icon: const Icon(Icons.crop_square, size: 18),
+              onPressed: () async {
+                if (await windowManager.isMaximized()) {
+                  windowManager.unmaximize();
+                } else {
+                  windowManager.maximize();
+                }
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, size: 18),
+              onPressed: () => windowManager.close(),
+            ),
+          ],
+        ],
       ),
       body: Center(
         child: Card(

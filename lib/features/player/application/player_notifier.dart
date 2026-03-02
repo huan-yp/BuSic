@@ -3,6 +3,11 @@ import 'dart:math';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../core/api/bili_dio.dart';
+import '../../../core/utils/logger.dart';
+import '../../playlist/domain/models/song_item.dart';
+import '../../search_and_parse/data/parse_repository.dart';
+import '../../search_and_parse/data/parse_repository_impl.dart';
 import '../data/player_repository.dart';
 import '../data/player_repository_impl.dart';
 import '../domain/models/audio_track.dart';
@@ -17,12 +22,14 @@ part 'player_notifier.g.dart';
 /// Listens to the [PlayerRepository] streams and updates [PlayerState] accordingly.
 @riverpod
 class PlayerNotifier extends _$PlayerNotifier {
-  late final PlayerRepository _repository;
+  late PlayerRepository _repository;
+  late ParseRepository _parseRepository;
   final List<StreamSubscription> _subscriptions = [];
 
   @override
   PlayerState build() {
     _repository = PlayerRepositoryImpl();
+    _parseRepository = ParseRepositoryImpl(biliDio: BiliDio());
 
     // Listen to player streams
     _subscriptions.add(
@@ -71,6 +78,73 @@ class PlayerNotifier extends _$PlayerNotifier {
     await _repository.play(track);
   }
 
+  /// Convert a [SongItem] to an [AudioTrack] by resolving the audio stream URL.
+  Future<AudioTrack> _resolveAudioTrack(SongItem song) async {
+    String? streamUrl;
+    if (song.localPath == null) {
+      try {
+        final streamInfo = await _parseRepository.getAudioStream(song.bvid, song.cid);
+        streamUrl = streamInfo.url;
+      } catch (e) {
+        AppLogger.error('Failed to resolve stream for ${song.bvid}', tag: 'Player', error: e);
+        rethrow;
+      }
+    }
+    return AudioTrack(
+      songId: song.id,
+      bvid: song.bvid,
+      cid: song.cid,
+      title: song.displayTitle,
+      artist: song.displayArtist,
+      coverUrl: song.coverUrl,
+      duration: Duration(seconds: song.duration),
+      streamUrl: streamUrl,
+      localPath: song.localPath,
+    );
+  }
+
+  /// Play a song from a playlist, building the queue from the song list.
+  Future<void> playSongFromPlaylist({
+    required SongItem song,
+    required List<SongItem> songs,
+    required int playlistId,
+    String? playlistName,
+  }) async {
+    final index = songs.indexWhere((s) => s.id == song.id);
+
+    // Resolve current song first for immediate playback
+    final track = await _resolveAudioTrack(song);
+
+    // Build queue with placeholder tracks (will resolve on play)
+    final queue = songs.map((s) => AudioTrack(
+      songId: s.id,
+      bvid: s.bvid,
+      cid: s.cid,
+      title: s.displayTitle,
+      artist: s.displayArtist,
+      coverUrl: s.coverUrl,
+      duration: Duration(seconds: s.duration),
+      streamUrl: s.id == song.id ? track.streamUrl : null,
+      localPath: s.localPath,
+    )).toList();
+
+    // Update the resolved track in queue
+    if (index >= 0) {
+      queue[index] = track;
+    }
+
+    state = state.copyWith(
+      currentTrack: track,
+      queue: queue,
+      currentIndex: index >= 0 ? index : 0,
+      position: Duration.zero,
+      playlistId: playlistId,
+      playlistName: playlistName,
+    );
+
+    await _repository.play(track);
+  }
+
   /// Pause the current playback.
   Future<void> pause() async {
     await _repository.pause();
@@ -92,7 +166,20 @@ class PlayerNotifier extends _$PlayerNotifier {
       return;
     }
 
-    final track = state.queue[nextIndex];
+    var track = state.queue[nextIndex];
+    // Resolve stream URL if needed
+    if (track.streamUrl == null && track.localPath == null) {
+      try {
+        final streamInfo = await _parseRepository.getAudioStream(track.bvid, track.cid);
+        track = track.copyWith(streamUrl: streamInfo.url);
+        final updatedQueue = List<AudioTrack>.from(state.queue);
+        updatedQueue[nextIndex] = track;
+        state = state.copyWith(queue: updatedQueue);
+      } catch (e) {
+        AppLogger.error('Failed to resolve next track', tag: 'Player', error: e);
+        return;
+      }
+    }
     state = state.copyWith(
       currentTrack: track,
       currentIndex: nextIndex,
@@ -115,7 +202,20 @@ class PlayerNotifier extends _$PlayerNotifier {
         ? state.currentIndex - 1
         : state.queue.length - 1;
 
-    final track = state.queue[prevIndex];
+    var track = state.queue[prevIndex];
+    // Resolve stream URL if needed
+    if (track.streamUrl == null && track.localPath == null) {
+      try {
+        final streamInfo = await _parseRepository.getAudioStream(track.bvid, track.cid);
+        track = track.copyWith(streamUrl: streamInfo.url);
+        final updatedQueue = List<AudioTrack>.from(state.queue);
+        updatedQueue[prevIndex] = track;
+        state = state.copyWith(queue: updatedQueue);
+      } catch (e) {
+        AppLogger.error('Failed to resolve prev track', tag: 'Player', error: e);
+        return;
+      }
+    }
     state = state.copyWith(
       currentTrack: track,
       currentIndex: prevIndex,

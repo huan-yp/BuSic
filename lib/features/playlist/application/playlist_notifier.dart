@@ -11,7 +11,7 @@ part 'playlist_notifier.g.dart';
 /// State notifier managing playlist list and CRUD operations.
 @riverpod
 class PlaylistListNotifier extends _$PlaylistListNotifier {
-  late final PlaylistRepository _repository;
+  late PlaylistRepository _repository;
 
   @override
   Future<List<Playlist>> build() async {
@@ -21,10 +21,11 @@ class PlaylistListNotifier extends _$PlaylistListNotifier {
     return _repository.getAllPlaylists();
   }
 
-  /// Create a new playlist with [name].
-  Future<void> createPlaylist(String name) async {
-    await _repository.createPlaylist(name);
+  /// Create a new playlist with [name]. Returns the created playlist.
+  Future<Playlist> createPlaylist(String name) async {
+    final playlist = await _repository.createPlaylist(name);
     ref.invalidateSelf();
+    return playlist;
   }
 
   /// Delete a playlist by [id].
@@ -43,7 +44,7 @@ class PlaylistListNotifier extends _$PlaylistListNotifier {
 /// State notifier managing songs within a specific playlist.
 @riverpod
 class PlaylistDetailNotifier extends _$PlaylistDetailNotifier {
-  late final PlaylistRepository _repository;
+  late PlaylistRepository _repository;
 
   @override
   Future<List<SongItem>> build(int playlistId) async {

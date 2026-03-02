@@ -40,8 +40,8 @@ class ParseState with _$ParseState {
 /// State notifier managing the BV number parsing and page selection flow.
 @riverpod
 class ParseNotifier extends _$ParseNotifier {
-  late final ParseRepository _repository;
-  late final PlaylistRepository _playlistRepository;
+  late ParseRepository _repository;
+  late PlaylistRepository _playlistRepository;
 
   @override
   ParseState build() {
@@ -102,8 +102,8 @@ class ParseNotifier extends _$ParseNotifier {
     state = ParseState.selectingPages(current.info, []);
   }
 
-  /// Confirm the selected pages and create song entries.
-  Future<List<int>> confirmSelection() async {
+  /// Confirm the selected pages, create song entries, and optionally add to a playlist.
+  Future<List<int>> confirmSelection({int? playlistId}) async {
     final current = state;
     BvidInfo? info;
     List<PageInfo> pages;
@@ -129,6 +129,10 @@ class ParseNotifier extends _$ParseNotifier {
         duration: page.duration,
       );
       songIds.add(songId);
+    }
+
+    if (playlistId != null && songIds.isNotEmpty) {
+      await _playlistRepository.addSongsToPlaylist(playlistId, songIds);
     }
 
     state = const ParseState.idle();

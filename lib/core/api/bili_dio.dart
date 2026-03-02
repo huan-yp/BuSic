@@ -1,24 +1,30 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:dio_cookie_manager/dio_cookie_manager.dart';
-import 'package:cookie_jar/cookie_jar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+
+import '../utils/logger.dart';
 
 /// Singleton Dio HTTP client configured for Bilibili API requests.
 ///
 /// Features:
-/// - Cookie persistence for authenticated requests
+/// - Raw session cookie injection (bypasses Dart's strict Cookie parser)
 /// - Referer header injection (required by Bilibili)
-/// - WBI signature interceptor
 /// - Configurable timeout and base URL
 class BiliDio {
   static BiliDio? _instance;
   late final Dio _dio;
-  late final PersistCookieJar _cookieJar;
+
+  /// Raw session cookies stored as name->value map.
+  /// Bilibili's SESSDATA contains commas which Dart's Cookie class rejects,
+  /// so we handle cookies as raw strings instead.
+  final Map<String, String> _sessionCookies = {};
+
+  /// Path to persist cookies on disk.
+  static String? _cookiePersistPath;
 
   BiliDio._internal() {
-    _cookieJar = PersistCookieJar();
     _dio = Dio(
       BaseOptions(
         baseUrl: 'https://api.bilibili.com',
@@ -26,13 +32,14 @@ class BiliDio {
         receiveTimeout: const Duration(seconds: 30),
         headers: {
           'User-Agent':
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                  '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Referer': 'https://www.bilibili.com',
         },
       ),
     );
     _dio.interceptors.addAll([
-      CookieManager(_cookieJar),
+      _RawCookieInterceptor(this),
       _BiliRefererInterceptor(),
     ]);
   }
@@ -43,25 +50,31 @@ class BiliDio {
     return _instance!;
   }
 
-  /// Initialize persistent cookie storage.
+  /// Initialize persistent cookie storage directory.
   static Future<void> initCookieStorage() async {
     final dir = await getApplicationDocumentsDirectory();
-    final cookiePath = p.join(dir.path, 'busic', 'cookies');
-    final cookieDir = Directory(cookiePath);
-    if (!await cookieDir.exists()) {
-      await cookieDir.create(recursive: true);
-    }
-    BiliDio()._cookieJar = PersistCookieJar(storage: FileStorage(cookiePath));
-    // Re-add cookie manager with persistent storage
-    BiliDio()._dio.interceptors.removeWhere((i) => i is CookieManager);
-    BiliDio()._dio.interceptors.insert(0, CookieManager(BiliDio()._cookieJar));
+    _cookiePersistPath = p.join(dir.path, 'busic', 'cookies.json');
+    // Load persisted cookies
+    await BiliDio()._loadPersistedCookies();
+  }
+
+  /// Set raw session cookies (e.g., after QR login).
+  ///
+  /// Values may contain commas and other characters that Dart's Cookie
+  /// class rejects -- they are stored and injected as raw strings.
+  Future<void> setSessionCookies(Map<String, String> cookies) async {
+    _sessionCookies.addAll(cookies);
+    await _persistCookies();
+  }
+
+  /// Clear all stored cookies (logout).
+  Future<void> clearCookies() async {
+    _sessionCookies.clear();
+    await _persistCookies();
   }
 
   /// The underlying [Dio] instance for direct use.
   Dio get dio => _dio;
-
-  /// The cookie jar for session management.
-  CookieJar get cookieJar => _cookieJar;
 
   /// Perform a GET request to [path] with optional [queryParameters].
   Future<Response<T>> get<T>(
@@ -95,16 +108,6 @@ class BiliDio {
     );
   }
 
-  /// Update stored cookies (e.g., after QR login).
-  Future<void> updateCookies(Uri uri, List<Cookie> cookies) async {
-    await _cookieJar.saveFromResponse(uri, cookies);
-  }
-
-  /// Clear all stored cookies (logout).
-  Future<void> clearCookies() async {
-    await _cookieJar.deleteAll();
-  }
-
   /// Download a file from [url] to [savePath] with progress callback.
   Future<Response> download(
     String url,
@@ -120,6 +123,59 @@ class BiliDio {
       cancelToken: cancelToken,
       options: Options(headers: headers),
     );
+  }
+
+  Future<void> _loadPersistedCookies() async {
+    if (_cookiePersistPath == null) return;
+    try {
+      final file = File(_cookiePersistPath!);
+      if (await file.exists()) {
+        final json = await file.readAsString();
+        final map = Map<String, String>.from(jsonDecode(json) as Map);
+        _sessionCookies.addAll(map);
+        AppLogger.info(
+          'Loaded ${_sessionCookies.length} persisted cookies',
+          tag: 'BiliDio',
+        );
+      }
+    } catch (e) {
+      AppLogger.warning('Failed to load cookies: $e', tag: 'BiliDio');
+    }
+  }
+
+  Future<void> _persistCookies() async {
+    if (_cookiePersistPath == null) return;
+    try {
+      final file = File(_cookiePersistPath!);
+      final dir = file.parent;
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+      await file.writeAsString(jsonEncode(_sessionCookies));
+    } catch (e) {
+      AppLogger.warning('Failed to persist cookies: $e', tag: 'BiliDio');
+    }
+  }
+}
+
+/// Interceptor that injects raw session cookies into request headers.
+///
+/// This bypasses Dart's strict Cookie class which rejects commas in values
+/// (common in Bilibili's SESSDATA cookie).
+class _RawCookieInterceptor extends Interceptor {
+  final BiliDio _biliDio;
+
+  _RawCookieInterceptor(this._biliDio);
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    if (_biliDio._sessionCookies.isNotEmpty) {
+      final cookieStr = _biliDio._sessionCookies.entries
+          .map((e) => '${e.key}=${e.value}')
+          .join('; ');
+      options.headers[HttpHeaders.cookieHeader] = cookieStr;
+    }
+    handler.next(options);
   }
 }
 

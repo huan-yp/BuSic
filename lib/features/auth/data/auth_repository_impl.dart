@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 
 import '../../../core/api/bili_dio.dart';
@@ -14,13 +13,30 @@ class AuthRepositoryImpl implements AuthRepository {
   final BiliDio _biliDio;
   final AppDatabase _db;
 
+  /// Raw Dio instance for auth requests that bypasses cookie management.
+  /// Bilibili's passport endpoints return Set-Cookie headers with commas,
+  /// which Dart's Cookie parser rejects. Since we extract session info from
+  /// the redirect URL rather than cookies, we don't need cookie handling.
+  static final Dio _authDio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 30),
+      headers: {
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://www.bilibili.com',
+      },
+    ),
+  );
+
   AuthRepositoryImpl({required BiliDio biliDio, required AppDatabase db})
       : _biliDio = biliDio,
         _db = db;
 
   @override
   Future<({String qrUrl, String qrKey})> generateQrCode() async {
-    final response = await _biliDio.get(
+    final response = await _authDio.get(
       'https://passport.bilibili.com/x/passport-login/web/qrcode/generate',
     );
     final data = response.data['data'];
@@ -32,7 +48,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<QrPollResult> pollQrStatus(String qrKey) async {
-    final response = await _biliDio.get(
+    final response = await _authDio.get(
       'https://passport.bilibili.com/x/passport-login/web/qrcode/poll',
       queryParameters: {'qrcode_key': qrKey},
     );
@@ -56,13 +72,12 @@ class AuthRepositoryImpl implements AuthRepository {
           ),
         );
 
-    // Update cookies in BiliDio
-    final uri = Uri.parse('https://bilibili.com');
-    await _biliDio.updateCookies(uri, [
-      Cookie('SESSDATA', user.sessdata),
-      Cookie('bili_jct', user.biliJct),
-      Cookie('DedeUserID', user.userId),
-    ]);
+    // Update raw session cookies in BiliDio (bypasses Dart's Cookie parser)
+    await _biliDio.setSessionCookies({
+      'SESSDATA': user.sessdata,
+      'bili_jct': user.biliJct,
+      'DedeUserID': user.userId,
+    });
   }
 
   @override
@@ -76,13 +91,12 @@ class AuthRepositoryImpl implements AuthRepository {
 
     final session = sessions.first;
 
-    // Restore cookies
-    final uri = Uri.parse('https://bilibili.com');
-    await _biliDio.updateCookies(uri, [
-      Cookie('SESSDATA', session.sessdata),
-      Cookie('bili_jct', session.biliJct),
-      Cookie('DedeUserID', session.dedeUserId),
-    ]);
+    // Restore raw session cookies
+    await _biliDio.setSessionCookies({
+      'SESSDATA': session.sessdata,
+      'bili_jct': session.biliJct,
+      'DedeUserID': session.dedeUserId,
+    });
 
     return User(
       userId: session.dedeUserId,

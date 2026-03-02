@@ -90,7 +90,7 @@ class SongTile extends StatelessWidget {
         children: [
           if (duration != null)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.only(right: 4),
               child: Text(
                 duration!,
                 style: textTheme.bodySmall?.copyWith(
@@ -98,6 +98,16 @@ class SongTile extends StatelessWidget {
                 ),
               ),
             ),
+          // Play button
+          IconButton(
+            icon: Icon(
+              isPlaying ? Icons.pause_circle_filled : Icons.play_circle_outline,
+              color: isPlaying ? colorScheme.primary : colorScheme.onSurfaceVariant,
+              size: 28,
+            ),
+            onPressed: onTap,
+            tooltip: isPlaying ? '暂停' : '播放',
+          ),
           if (onMorePressed != null)
             IconButton(
               icon: const Icon(Icons.more_vert, size: 20),

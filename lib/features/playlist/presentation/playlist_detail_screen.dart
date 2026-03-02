@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/song_tile.dart';
+import '../../player/application/player_notifier.dart';
+import '../../player/domain/models/audio_track.dart';
+import '../../player/domain/models/play_mode.dart';
 import '../application/playlist_notifier.dart';
 import '../domain/models/song_item.dart';
 import 'widgets/metadata_edit_dialog.dart';
@@ -74,16 +77,12 @@ class PlaylistDetailScreen extends ConsumerWidget {
                     IconButton(
                       icon: const Icon(Icons.play_arrow),
                       tooltip: l10n.play,
-                      onPressed: () {
-                        // TODO: Play all songs via PlayerNotifier
-                      },
+                      onPressed: () => _playAll(ref, songs, playlistName),
                     ),
                     IconButton(
                       icon: const Icon(Icons.shuffle),
                       tooltip: l10n.shuffle,
-                      onPressed: () {
-                        // TODO: Shuffle play via PlayerNotifier
-                      },
+                      onPressed: () => _shufflePlay(ref, songs, playlistName),
                     ),
                   ],
                 ],
@@ -112,6 +111,8 @@ class PlaylistDetailScreen extends ConsumerWidget {
                   },
                   itemBuilder: (context, index) {
                     final song = songs[index];
+                    final playerState = ref.watch(playerNotifierProvider);
+                    final isCurrentSong = playerState.currentTrack?.songId == song.id;
                     return ReorderableDragStartListener(
                       key: ValueKey(song.id),
                       index: index,
@@ -120,9 +121,15 @@ class PlaylistDetailScreen extends ConsumerWidget {
                         artist: song.displayArtist,
                         coverUrl: song.coverUrl,
                         duration: Formatters.formatDuration(Duration(seconds: song.duration)),
-                        isPlaying: false, // TODO: compare with current player track
+                        isPlaying: isCurrentSong && playerState.isPlaying,
                         onTap: () {
-                          // TODO: play this song via PlayerNotifier
+                          if (isCurrentSong && playerState.isPlaying) {
+                            ref.read(playerNotifierProvider.notifier).pause();
+                          } else if (isCurrentSong) {
+                            ref.read(playerNotifierProvider.notifier).resume();
+                          } else {
+                            _playSong(ref, song, songs, playlistName);
+                          }
                         },
                         onMorePressed: () {
                           _showSongMenu(context, ref, song);
@@ -179,12 +186,66 @@ class PlaylistDetailScreen extends ConsumerWidget {
               title: Text(l10n.addToPlaylist),
               onTap: () {
                 Navigator.pop(ctx);
-                // TODO: add to play queue
+                ref.read(playerNotifierProvider.notifier).addToQueue(
+                  _songToTrack(song),
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('已添加到播放队列')),
+                );
               },
             ),
           ],
         ),
       ),
+    );
+  }
+
+  /// Play all songs sequentially from the first track.
+  void _playAll(WidgetRef ref, List<SongItem> songs, String? playlistName) {
+    if (songs.isEmpty) return;
+    ref.read(playerNotifierProvider.notifier).setMode(PlayMode.sequential);
+    ref.read(playerNotifierProvider.notifier).playSongFromPlaylist(
+      song: songs.first,
+      songs: songs,
+      playlistId: playlistId,
+      playlistName: playlistName,
+    );
+  }
+
+  /// Shuffle play all songs.
+  void _shufflePlay(WidgetRef ref, List<SongItem> songs, String? playlistName) {
+    if (songs.isEmpty) return;
+    final shuffled = List<SongItem>.from(songs)..shuffle();
+    ref.read(playerNotifierProvider.notifier).setMode(PlayMode.shuffle);
+    ref.read(playerNotifierProvider.notifier).playSongFromPlaylist(
+      song: shuffled.first,
+      songs: shuffled,
+      playlistId: playlistId,
+      playlistName: playlistName,
+    );
+  }
+
+  /// Play a specific song within the playlist context.
+  void _playSong(WidgetRef ref, SongItem song, List<SongItem> songs, String? playlistName) {
+    ref.read(playerNotifierProvider.notifier).playSongFromPlaylist(
+      song: song,
+      songs: songs,
+      playlistId: playlistId,
+      playlistName: playlistName,
+    );
+  }
+
+  /// Convert a SongItem to an AudioTrack (without stream URL — for queue only).
+  AudioTrack _songToTrack(SongItem song) {
+    return AudioTrack(
+      songId: song.id,
+      bvid: song.bvid,
+      cid: song.cid,
+      title: song.displayTitle,
+      artist: song.displayArtist,
+      coverUrl: song.coverUrl,
+      duration: Duration(seconds: song.duration),
+      localPath: song.localPath,
     );
   }
 }

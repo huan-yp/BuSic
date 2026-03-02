@@ -50,34 +50,24 @@ class PlaylistListScreen extends ConsumerWidget {
             );
           }
 
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              final crossAxisCount = constraints.maxWidth > 900
-                  ? 4
-                  : constraints.maxWidth > 600
-                      ? 3
-                      : 2;
-
-              return GridView.builder(
-                padding: const EdgeInsets.all(16),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  childAspectRatio: 0.85,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                ),
-                itemCount: playlists.length,
-                itemBuilder: (context, index) {
-                  final playlist = playlists[index];
-                  return PlaylistTile(
-                    playlist: playlist,
-                    onTap: () {
-                      context.go('/playlists/${playlist.id}');
-                    },
-                    onLongPress: () {
-                      _showPlaylistMenu(context, ref, playlist.id, playlist.name);
-                    },
-                  );
+          return GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 200,
+              childAspectRatio: 0.85,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+            itemCount: playlists.length,
+            itemBuilder: (context, index) {
+              final playlist = playlists[index];
+              return PlaylistTile(
+                playlist: playlist,
+                onTap: () {
+                  context.go('/playlists/${playlist.id}');
+                },
+                onLongPress: () {
+                  _showPlaylistMenu(context, ref, playlist.id, playlist.name);
                 },
               );
             },

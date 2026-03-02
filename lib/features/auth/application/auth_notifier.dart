@@ -16,7 +16,7 @@ part 'auth_notifier.g.dart';
 /// for login, logout, and session validation.
 @riverpod
 class AuthNotifier extends _$AuthNotifier {
-  late final AuthRepository _repository;
+  late AuthRepository _repository;
   Timer? _pollTimer;
   String? _currentQrKey;
 
@@ -42,7 +42,11 @@ class AuthNotifier extends _$AuthNotifier {
   /// Start the QR code login flow.
   ///
   /// Returns the QR code URL to display and begins polling.
-  Future<String> login() async {
+  /// Optional callbacks [onScanned] and [onExpired] notify the UI of status.
+  Future<String> login({
+    void Function()? onScanned,
+    void Function()? onExpired,
+  }) async {
     final qrData = await _repository.generateQrCode();
     _currentQrKey = qrData.qrKey;
 
@@ -79,9 +83,11 @@ class AuthNotifier extends _$AuthNotifier {
           case 86038: // QR expired
             timer.cancel();
             _currentQrKey = null;
+            onExpired?.call();
             AppLogger.warning('QR code expired', tag: 'Auth');
             break;
           case 86090: // Scanned, waiting confirmation
+            onScanned?.call();
             AppLogger.info('QR scanned, waiting confirmation', tag: 'Auth');
             break;
           case 86101: // Not scanned

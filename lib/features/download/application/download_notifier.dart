@@ -13,7 +13,7 @@ part 'download_notifier.g.dart';
 /// State notifier managing the download task queue and status.
 @riverpod
 class DownloadNotifier extends _$DownloadNotifier {
-  late final DownloadRepository _repository;
+  late DownloadRepository _repository;
   StreamSubscription? _watchSubscription;
 
   @override

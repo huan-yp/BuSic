@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/platform_utils.dart';
 import '../../features/player/presentation/player_bar.dart';
 import '../../features/auth/presentation/widgets/user_avatar_widget.dart';
 
@@ -57,6 +59,9 @@ class ResponsiveScaffold extends StatelessWidget {
       return Scaffold(
         body: Column(
           children: [
+            // Custom title bar with drag area and window controls
+            if (PlatformUtils.isDesktop)
+              _DesktopTitleBar(colorScheme: colorScheme),
             // Desktop content
             Expanded(
               child: Row(
@@ -161,6 +166,101 @@ class ResponsiveScaffold extends StatelessWidget {
             label: l10n.settings,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Custom desktop title bar with drag-to-move area and window control buttons.
+class _DesktopTitleBar extends StatelessWidget {
+  final ColorScheme colorScheme;
+
+  const _DesktopTitleBar({required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onPanStart: (_) => windowManager.startDragging(),
+      child: Container(
+        height: 36,
+        color: colorScheme.surface,
+        child: Row(
+          children: [
+            const SizedBox(width: 12),
+            Text(
+              'BuSic',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const Spacer(),
+            // Minimize
+            _WindowButton(
+              icon: Icons.minimize,
+              onPressed: () => windowManager.minimize(),
+              colorScheme: colorScheme,
+            ),
+            // Maximize / Restore
+            _WindowButton(
+              icon: Icons.crop_square,
+              onPressed: () async {
+                if (await windowManager.isMaximized()) {
+                  windowManager.unmaximize();
+                } else {
+                  windowManager.maximize();
+                }
+              },
+              colorScheme: colorScheme,
+            ),
+            // Close
+            _WindowButton(
+              icon: Icons.close,
+              onPressed: () => windowManager.close(),
+              colorScheme: colorScheme,
+              isClose: true,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WindowButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+  final ColorScheme colorScheme;
+  final bool isClose;
+
+  const _WindowButton({
+    required this.icon,
+    required this.onPressed,
+    required this.colorScheme,
+    this.isClose = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 46,
+      height: 36,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          hoverColor: isClose
+              ? Colors.red.withValues(alpha: 0.8)
+              : colorScheme.onSurface.withValues(alpha: 0.08),
+          child: Center(
+            child: Icon(
+              icon,
+              size: 16,
+              color: colorScheme.onSurface,
+            ),
+          ),
+        ),
       ),
     );
   }

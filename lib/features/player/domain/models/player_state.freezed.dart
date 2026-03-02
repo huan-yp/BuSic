@@ -40,6 +40,12 @@ mixin _$PlayerState {
   /// Index of the current track in the queue.
   int get currentIndex => throw _privateConstructorUsedError;
 
+  /// Currently playing playlist name (for display).
+  String? get playlistName => throw _privateConstructorUsedError;
+
+  /// Currently playing playlist ID.
+  int? get playlistId => throw _privateConstructorUsedError;
+
   /// Create a copy of PlayerState
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -61,7 +67,9 @@ abstract class $PlayerStateCopyWith<$Res> {
       bool isPlaying,
       PlayMode playMode,
       double volume,
-      int currentIndex});
+      int currentIndex,
+      String? playlistName,
+      int? playlistId});
 
   $AudioTrackCopyWith<$Res>? get currentTrack;
 }
@@ -89,6 +97,8 @@ class _$PlayerStateCopyWithImpl<$Res, $Val extends PlayerState>
     Object? playMode = null,
     Object? volume = null,
     Object? currentIndex = null,
+    Object? playlistName = freezed,
+    Object? playlistId = freezed,
   }) {
     return _then(_value.copyWith(
       currentTrack: freezed == currentTrack
@@ -123,6 +133,14 @@ class _$PlayerStateCopyWithImpl<$Res, $Val extends PlayerState>
           ? _value.currentIndex
           : currentIndex // ignore: cast_nullable_to_non_nullable
               as int,
+      playlistName: freezed == playlistName
+          ? _value.playlistName
+          : playlistName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      playlistId: freezed == playlistId
+          ? _value.playlistId
+          : playlistId // ignore: cast_nullable_to_non_nullable
+              as int?,
     ) as $Val);
   }
 
@@ -157,7 +175,9 @@ abstract class _$$PlayerStateImplCopyWith<$Res>
       bool isPlaying,
       PlayMode playMode,
       double volume,
-      int currentIndex});
+      int currentIndex,
+      String? playlistName,
+      int? playlistId});
 
   @override
   $AudioTrackCopyWith<$Res>? get currentTrack;
@@ -184,6 +204,8 @@ class __$$PlayerStateImplCopyWithImpl<$Res>
     Object? playMode = null,
     Object? volume = null,
     Object? currentIndex = null,
+    Object? playlistName = freezed,
+    Object? playlistId = freezed,
   }) {
     return _then(_$PlayerStateImpl(
       currentTrack: freezed == currentTrack
@@ -218,6 +240,14 @@ class __$$PlayerStateImplCopyWithImpl<$Res>
           ? _value.currentIndex
           : currentIndex // ignore: cast_nullable_to_non_nullable
               as int,
+      playlistName: freezed == playlistName
+          ? _value.playlistName
+          : playlistName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      playlistId: freezed == playlistId
+          ? _value.playlistId
+          : playlistId // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -233,7 +263,9 @@ class _$PlayerStateImpl implements _PlayerState {
       this.isPlaying = false,
       this.playMode = PlayMode.sequential,
       this.volume = 1.0,
-      this.currentIndex = 0})
+      this.currentIndex = 0,
+      this.playlistName,
+      this.playlistId})
       : _queue = queue;
 
   /// Currently playing track, or `null` if nothing is loaded.
@@ -282,9 +314,17 @@ class _$PlayerStateImpl implements _PlayerState {
   @JsonKey()
   final int currentIndex;
 
+  /// Currently playing playlist name (for display).
+  @override
+  final String? playlistName;
+
+  /// Currently playing playlist ID.
+  @override
+  final int? playlistId;
+
   @override
   String toString() {
-    return 'PlayerState(currentTrack: $currentTrack, queue: $queue, position: $position, duration: $duration, isPlaying: $isPlaying, playMode: $playMode, volume: $volume, currentIndex: $currentIndex)';
+    return 'PlayerState(currentTrack: $currentTrack, queue: $queue, position: $position, duration: $duration, isPlaying: $isPlaying, playMode: $playMode, volume: $volume, currentIndex: $currentIndex, playlistName: $playlistName, playlistId: $playlistId)';
   }
 
   @override
@@ -305,7 +345,11 @@ class _$PlayerStateImpl implements _PlayerState {
                 other.playMode == playMode) &&
             (identical(other.volume, volume) || other.volume == volume) &&
             (identical(other.currentIndex, currentIndex) ||
-                other.currentIndex == currentIndex));
+                other.currentIndex == currentIndex) &&
+            (identical(other.playlistName, playlistName) ||
+                other.playlistName == playlistName) &&
+            (identical(other.playlistId, playlistId) ||
+                other.playlistId == playlistId));
   }
 
   @override
@@ -318,7 +362,9 @@ class _$PlayerStateImpl implements _PlayerState {
       isPlaying,
       playMode,
       volume,
-      currentIndex);
+      currentIndex,
+      playlistName,
+      playlistId);
 
   /// Create a copy of PlayerState
   /// with the given fields replaced by the non-null parameter values.
@@ -338,7 +384,9 @@ abstract class _PlayerState implements PlayerState {
       final bool isPlaying,
       final PlayMode playMode,
       final double volume,
-      final int currentIndex}) = _$PlayerStateImpl;
+      final int currentIndex,
+      final String? playlistName,
+      final int? playlistId}) = _$PlayerStateImpl;
 
   /// Currently playing track, or `null` if nothing is loaded.
   @override
@@ -371,6 +419,14 @@ abstract class _PlayerState implements PlayerState {
   /// Index of the current track in the queue.
   @override
   int get currentIndex;
+
+  /// Currently playing playlist name (for display).
+  @override
+  String? get playlistName;
+
+  /// Currently playing playlist ID.
+  @override
+  int? get playlistId;
 
   /// Create a copy of PlayerState
   /// with the given fields replaced by the non-null parameter values.
