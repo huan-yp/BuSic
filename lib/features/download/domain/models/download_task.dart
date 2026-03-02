@@ -42,6 +42,12 @@ class DownloadTask with _$DownloadTask {
 
     /// Timestamp when the task was created.
     required DateTime createdAt,
+
+    /// Song title (populated from songs table for display).
+    String? songTitle,
+
+    /// Song artist (populated from songs table for display).
+    String? songArtist,
   }) = _DownloadTask;
 
   factory DownloadTask.fromJson(Map<String, dynamic> json) =>

@@ -21,7 +21,7 @@ class DownloadRepositoryImpl implements DownloadRepository {
       : _dio = dio,
         _db = db;
 
-  domain.DownloadTask _mapTask(DownloadTask row) {
+  domain.DownloadTask _mapTask(DownloadTask row, {String? songTitle, String? songArtist}) {
     return domain.DownloadTask(
       id: row.id,
       songId: row.songId,
@@ -29,6 +29,8 @@ class DownloadRepositoryImpl implements DownloadRepository {
       progress: row.progress / 100.0,
       filePath: row.filePath,
       createdAt: row.createdAt,
+      songTitle: songTitle,
+      songArtist: songArtist,
     );
   }
 
@@ -37,6 +39,7 @@ class DownloadRepositoryImpl implements DownloadRepository {
     required int songId,
     required String url,
     required String savePath,
+    int quality = 0,
   }) async {
     // Create task in DB
     final taskId = await _db.into(_db.downloadTasks).insert(
@@ -47,7 +50,7 @@ class DownloadRepositoryImpl implements DownloadRepository {
         );
 
     // Start async download
-    _downloadFile(taskId, songId, url, savePath);
+    _downloadFile(taskId, songId, url, savePath, quality);
 
     return taskId;
   }
@@ -57,6 +60,7 @@ class DownloadRepositoryImpl implements DownloadRepository {
     int songId,
     String url,
     String savePath,
+    int quality,
   ) async {
     final cancelToken = CancelToken();
     _cancelTokens[taskId] = cancelToken;
@@ -69,6 +73,9 @@ class DownloadRepositoryImpl implements DownloadRepository {
         url,
         savePath,
         cancelToken: cancelToken,
+        headers: {
+          'Referer': 'https://www.bilibili.com',
+        },
         onReceiveProgress: (received, total) {
           if (total > 0) {
             final progress = ((received / total) * 100).round();
@@ -80,9 +87,12 @@ class DownloadRepositoryImpl implements DownloadRepository {
       // Mark completed
       await _updateTaskStatus(taskId, 2, progress: 100);
 
-      // Update song's local path
+      // Update song's local path and audio quality
       await (_db.update(_db.songs)..where((t) => t.id.equals(songId)))
-          .write(SongsCompanion(localPath: Value(savePath)));
+          .write(SongsCompanion(
+            localPath: Value(savePath),
+            audioQuality: Value(quality),
+          ));
     } on DioException catch (e) {
       if (e.type == DioExceptionType.cancel) return;
       await _updateTaskStatus(taskId, 3);
@@ -172,19 +182,47 @@ class DownloadRepositoryImpl implements DownloadRepository {
 
   @override
   Future<List<domain.DownloadTask>> getAllTasks() async {
-    final rows = await (_db.select(_db.downloadTasks)
-          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
-        .get();
-    return rows.map(_mapTask).toList();
+    final query = _db.select(_db.downloadTasks).join([
+      leftOuterJoin(
+        _db.songs,
+        _db.songs.id.equalsExp(_db.downloadTasks.songId),
+      ),
+    ])
+      ..orderBy([OrderingTerm.desc(_db.downloadTasks.createdAt)]);
+
+    final rows = await query.get();
+    return rows.map((row) {
+      final task = row.readTable(_db.downloadTasks);
+      final song = row.readTableOrNull(_db.songs);
+      return _mapTask(
+        task,
+        songTitle: song?.customTitle ?? song?.originTitle,
+        songArtist: song?.customArtist ?? song?.originArtist,
+      );
+    }).toList();
   }
 
   @override
   Future<List<domain.DownloadTask>> getActiveTasks() async {
-    final rows = await (_db.select(_db.downloadTasks)
-          ..where((t) => t.status.isIn([0, 1]))
-          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
-        .get();
-    return rows.map(_mapTask).toList();
+    final query = _db.select(_db.downloadTasks).join([
+      leftOuterJoin(
+        _db.songs,
+        _db.songs.id.equalsExp(_db.downloadTasks.songId),
+      ),
+    ])
+      ..where(_db.downloadTasks.status.isIn([0, 1]))
+      ..orderBy([OrderingTerm.desc(_db.downloadTasks.createdAt)]);
+
+    final rows = await query.get();
+    return rows.map((row) {
+      final task = row.readTable(_db.downloadTasks);
+      final song = row.readTableOrNull(_db.songs);
+      return _mapTask(
+        task,
+        songTitle: song?.customTitle ?? song?.originTitle,
+        songArtist: song?.customArtist ?? song?.originArtist,
+      );
+    }).toList();
   }
 
   @override

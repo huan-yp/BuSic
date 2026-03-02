@@ -15,6 +15,8 @@ _$DownloadTaskImpl _$$DownloadTaskImplFromJson(Map<String, dynamic> json) =>
       filePath: json['filePath'] as String?,
       errorMessage: json['errorMessage'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      songTitle: json['songTitle'] as String?,
+      songArtist: json['songArtist'] as String?,
     );
 
 Map<String, dynamic> _$$DownloadTaskImplToJson(_$DownloadTaskImpl instance) =>
@@ -26,6 +28,8 @@ Map<String, dynamic> _$$DownloadTaskImplToJson(_$DownloadTaskImpl instance) =>
       'filePath': instance.filePath,
       'errorMessage': instance.errorMessage,
       'createdAt': instance.createdAt.toIso8601String(),
+      'songTitle': instance.songTitle,
+      'songArtist': instance.songArtist,
     };
 
 const _$DownloadStatusEnumMap = {

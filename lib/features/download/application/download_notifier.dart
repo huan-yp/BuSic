@@ -1,9 +1,15 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/api/bili_dio.dart';
 import '../../auth/application/auth_notifier.dart';
+import '../../search_and_parse/data/parse_repository.dart';
+import '../../search_and_parse/data/parse_repository_impl.dart';
+import '../../search_and_parse/domain/models/audio_stream_info.dart';
 import '../data/download_repository.dart';
 import '../data/download_repository_impl.dart';
 import '../domain/models/download_task.dart';
@@ -14,6 +20,7 @@ part 'download_notifier.g.dart';
 @riverpod
 class DownloadNotifier extends _$DownloadNotifier {
   late DownloadRepository _repository;
+  late ParseRepository _parseRepository;
   StreamSubscription? _watchSubscription;
 
   @override
@@ -22,6 +29,7 @@ class DownloadNotifier extends _$DownloadNotifier {
       dio: BiliDio(),
       db: ref.read(databaseProvider),
     );
+    _parseRepository = ParseRepositoryImpl(biliDio: BiliDio());
 
     // Watch for updates
     _watchSubscription = _repository.watchAllTasks().listen((tasks) {
@@ -33,6 +41,53 @@ class DownloadNotifier extends _$DownloadNotifier {
     });
 
     return _repository.getAllTasks();
+  }
+
+  /// Get available audio qualities for a song.
+  Future<List<AudioStreamInfo>> getAvailableQualities({
+    required String bvid,
+    required int cid,
+  }) async {
+    return _parseRepository.getAvailableQualities(bvid, cid);
+  }
+
+  /// Download a song with selected quality.
+  ///
+  /// Resolves the audio stream URL for [quality], determines the save path,
+  /// and starts the download.
+  Future<void> downloadSongWithQuality({
+    required int songId,
+    required String bvid,
+    required int cid,
+    required int quality,
+    required String title,
+  }) async {
+    // Resolve stream URL for selected quality
+    final streamInfo = await _parseRepository.getAudioStream(
+      bvid,
+      cid,
+      quality: quality,
+    );
+
+    // Determine save path
+    final dir = await getApplicationDocumentsDirectory();
+    final downloadDir = Directory(path.join(dir.path, 'busic', 'downloads'));
+    if (!await downloadDir.exists()) {
+      await downloadDir.create(recursive: true);
+    }
+    final safeTitle = title.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+    final savePath = path.join(
+      downloadDir.path,
+      '${safeTitle}_${bvid}_$quality.m4s',
+    );
+
+    await _repository.startDownload(
+      songId: songId,
+      url: streamInfo.url,
+      savePath: savePath,
+      quality: quality,
+    );
+    ref.invalidateSelf();
   }
 
   /// Start downloading a song by creating a download task.

@@ -41,6 +41,12 @@ mixin _$DownloadTask {
   /// Timestamp when the task was created.
   DateTime get createdAt => throw _privateConstructorUsedError;
 
+  /// Song title (populated from songs table for display).
+  String? get songTitle => throw _privateConstructorUsedError;
+
+  /// Song artist (populated from songs table for display).
+  String? get songArtist => throw _privateConstructorUsedError;
+
   /// Serializes this DownloadTask to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
@@ -64,7 +70,9 @@ abstract class $DownloadTaskCopyWith<$Res> {
       double progress,
       String? filePath,
       String? errorMessage,
-      DateTime createdAt});
+      DateTime createdAt,
+      String? songTitle,
+      String? songArtist});
 }
 
 /// @nodoc
@@ -89,6 +97,8 @@ class _$DownloadTaskCopyWithImpl<$Res, $Val extends DownloadTask>
     Object? filePath = freezed,
     Object? errorMessage = freezed,
     Object? createdAt = null,
+    Object? songTitle = freezed,
+    Object? songArtist = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -119,6 +129,14 @@ class _$DownloadTaskCopyWithImpl<$Res, $Val extends DownloadTask>
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      songTitle: freezed == songTitle
+          ? _value.songTitle
+          : songTitle // ignore: cast_nullable_to_non_nullable
+              as String?,
+      songArtist: freezed == songArtist
+          ? _value.songArtist
+          : songArtist // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -138,7 +156,9 @@ abstract class _$$DownloadTaskImplCopyWith<$Res>
       double progress,
       String? filePath,
       String? errorMessage,
-      DateTime createdAt});
+      DateTime createdAt,
+      String? songTitle,
+      String? songArtist});
 }
 
 /// @nodoc
@@ -161,6 +181,8 @@ class __$$DownloadTaskImplCopyWithImpl<$Res>
     Object? filePath = freezed,
     Object? errorMessage = freezed,
     Object? createdAt = null,
+    Object? songTitle = freezed,
+    Object? songArtist = freezed,
   }) {
     return _then(_$DownloadTaskImpl(
       id: null == id
@@ -191,6 +213,14 @@ class __$$DownloadTaskImplCopyWithImpl<$Res>
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      songTitle: freezed == songTitle
+          ? _value.songTitle
+          : songTitle // ignore: cast_nullable_to_non_nullable
+              as String?,
+      songArtist: freezed == songArtist
+          ? _value.songArtist
+          : songArtist // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -205,7 +235,9 @@ class _$DownloadTaskImpl implements _DownloadTask {
       this.progress = 0.0,
       this.filePath,
       this.errorMessage,
-      required this.createdAt});
+      required this.createdAt,
+      this.songTitle,
+      this.songArtist});
 
   factory _$DownloadTaskImpl.fromJson(Map<String, dynamic> json) =>
       _$$DownloadTaskImplFromJson(json);
@@ -239,9 +271,17 @@ class _$DownloadTaskImpl implements _DownloadTask {
   @override
   final DateTime createdAt;
 
+  /// Song title (populated from songs table for display).
+  @override
+  final String? songTitle;
+
+  /// Song artist (populated from songs table for display).
+  @override
+  final String? songArtist;
+
   @override
   String toString() {
-    return 'DownloadTask(id: $id, songId: $songId, status: $status, progress: $progress, filePath: $filePath, errorMessage: $errorMessage, createdAt: $createdAt)';
+    return 'DownloadTask(id: $id, songId: $songId, status: $status, progress: $progress, filePath: $filePath, errorMessage: $errorMessage, createdAt: $createdAt, songTitle: $songTitle, songArtist: $songArtist)';
   }
 
   @override
@@ -259,13 +299,17 @@ class _$DownloadTaskImpl implements _DownloadTask {
             (identical(other.errorMessage, errorMessage) ||
                 other.errorMessage == errorMessage) &&
             (identical(other.createdAt, createdAt) ||
-                other.createdAt == createdAt));
+                other.createdAt == createdAt) &&
+            (identical(other.songTitle, songTitle) ||
+                other.songTitle == songTitle) &&
+            (identical(other.songArtist, songArtist) ||
+                other.songArtist == songArtist));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, songId, status, progress,
-      filePath, errorMessage, createdAt);
+      filePath, errorMessage, createdAt, songTitle, songArtist);
 
   /// Create a copy of DownloadTask
   /// with the given fields replaced by the non-null parameter values.
@@ -291,7 +335,9 @@ abstract class _DownloadTask implements DownloadTask {
       final double progress,
       final String? filePath,
       final String? errorMessage,
-      required final DateTime createdAt}) = _$DownloadTaskImpl;
+      required final DateTime createdAt,
+      final String? songTitle,
+      final String? songArtist}) = _$DownloadTaskImpl;
 
   factory _DownloadTask.fromJson(Map<String, dynamic> json) =
       _$DownloadTaskImpl.fromJson;
@@ -323,6 +369,14 @@ abstract class _DownloadTask implements DownloadTask {
   /// Timestamp when the task was created.
   @override
   DateTime get createdAt;
+
+  /// Song title (populated from songs table for display).
+  @override
+  String? get songTitle;
+
+  /// Song artist (populated from songs table for display).
+  @override
+  String? get songArtist;
 
   /// Create a copy of DownloadTask
   /// with the given fields replaced by the non-null parameter values.

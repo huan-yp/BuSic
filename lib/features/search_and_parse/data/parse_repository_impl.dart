@@ -111,6 +111,51 @@ class ParseRepositoryImpl implements ParseRepository {
   }
 
   @override
+  Future<List<AudioStreamInfo>> getAvailableQualities(
+    String bvid,
+    int cid,
+  ) async {
+    await _ensureWbiKeys();
+
+    final params = WbiSign.encodeWbi(
+      {
+        'bvid': bvid,
+        'cid': cid,
+        'fnval': 16, // Request DASH format
+        'fnver': 0,
+        'fourk': 1,
+      },
+      imgKey: _imgKey!,
+      subKey: _subKey!,
+    );
+
+    final response = await _biliDio.get(
+      '/x/player/wbi/playurl',
+      queryParameters: params,
+    );
+    final data = response.data['data'];
+    final dash = data['dash'];
+    final audioStreams = dash['audio'] as List? ?? [];
+
+    final results = <AudioStreamInfo>[];
+    for (final stream in audioStreams) {
+      final backupUrls = (stream['backupUrl'] as List?)
+          ?.map((e) => e.toString()).toList() ?? [];
+      results.add(AudioStreamInfo(
+        url: stream['baseUrl'] as String? ?? stream['base_url'] as String,
+        quality: stream['id'] as int,
+        mimeType: stream['mimeType'] as String? ?? 'audio/mp4',
+        bandwidth: stream['bandwidth'] as int?,
+        backupUrls: backupUrls,
+      ));
+    }
+
+    // Sort by quality descending
+    results.sort((a, b) => b.quality.compareTo(a.quality));
+    return results;
+  }
+
+  @override
   Future<List<BvidInfo>> searchVideos(
     String keyword, {
     int page = 1,

@@ -32,6 +32,7 @@ class PlaylistRepositoryImpl implements PlaylistRepository {
       customArtist: row.customArtist,
       coverUrl: row.coverUrl,
       duration: row.duration,
+      audioQuality: row.audioQuality,
       localPath: row.localPath,
     );
   }

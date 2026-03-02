@@ -34,6 +34,15 @@ abstract class ParseRepository {
     int pageSize = 20,
   });
 
+  /// Get all available audio quality options for a specific video page.
+  ///
+  /// Returns a list of [AudioStreamInfo] sorted by quality descending.
+  /// The available qualities depend on the video and user's login status.
+  Future<List<AudioStreamInfo>> getAvailableQualities(
+    String bvid,
+    int cid,
+  );
+
   /// Fetch the current WBI signing keys from Bilibili nav API.
   ///
   /// Returns the (imgKey, subKey) pair needed for WBI-signed requests.

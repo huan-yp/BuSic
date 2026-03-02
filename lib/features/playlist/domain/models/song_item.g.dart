@@ -17,6 +17,7 @@ _$SongItemImpl _$$SongItemImplFromJson(Map<String, dynamic> json) =>
       customArtist: json['customArtist'] as String?,
       coverUrl: json['coverUrl'] as String?,
       duration: (json['duration'] as num?)?.toInt() ?? 0,
+      audioQuality: (json['audioQuality'] as num?)?.toInt() ?? 0,
       localPath: json['localPath'] as String?,
     );
 
@@ -31,5 +32,6 @@ Map<String, dynamic> _$$SongItemImplToJson(_$SongItemImpl instance) =>
       'customArtist': instance.customArtist,
       'coverUrl': instance.coverUrl,
       'duration': instance.duration,
+      'audioQuality': instance.audioQuality,
       'localPath': instance.localPath,
     };

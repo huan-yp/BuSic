@@ -43,6 +43,7 @@
   "downloading": "Downloading",
   "downloaded": "Downloaded",
   "downloadFailed": "Download failed",
+  "retryAll": "Retry All",
   "pending": "Pending",
   "clearCompleted": "Clear completed",
   "themeMode": "Theme Mode",
@@ -57,5 +58,16 @@
   "noSongs": "No songs yet",
   "noPlaylists": "No playlists yet",
   "unknownArtist": "Unknown Artist",
-  "unknownTitle": "Unknown Title"
+  "unknownTitle": "Unknown Title",
+  "downloadSong": "Download Song",
+  "selectQuality": "Select Quality",
+  "cached": "Cached",
+  "downloadStarted": "Download started",
+  "noQualities": "No available qualities",
+  "loginForHighQuality": "Login for higher quality",
+  "deleteDownload": "Delete Download",
+  "deleteDownloadConfirm": "Are you sure you want to delete the downloaded file?",
+  "activeDownloads": "Active Downloads",
+  "completedDownloads": "Completed",
+  "confirm": "Confirm"
 }

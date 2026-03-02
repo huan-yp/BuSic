@@ -21,6 +21,12 @@ class SongTile extends StatelessWidget {
   /// Whether this song is currently playing.
   final bool isPlaying;
 
+  /// Whether this song has been cached locally.
+  final bool isCached;
+
+  /// Quality label for the cached version (e.g., "192kbps").
+  final String? qualityLabel;
+
   /// Callback when the tile is tapped.
   final VoidCallback? onTap;
 
@@ -34,6 +40,8 @@ class SongTile extends StatelessWidget {
     required this.artist,
     this.duration,
     this.isPlaying = false,
+    this.isCached = false,
+    this.qualityLabel,
     this.onTap,
     this.onMorePressed,
   });
@@ -77,13 +85,32 @@ class SongTile extends StatelessWidget {
           fontWeight: isPlaying ? FontWeight.bold : null,
         ),
       ),
-      subtitle: Text(
-        artist,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: textTheme.bodySmall?.copyWith(
-          color: isPlaying ? colorScheme.primary : colorScheme.onSurfaceVariant,
-        ),
+      subtitle: Row(
+        children: [
+          if (isCached) ...[
+            Icon(Icons.download_done, size: 14,
+                color: isPlaying ? colorScheme.primary : colorScheme.tertiary),
+            const SizedBox(width: 2),
+            if (qualityLabel != null && qualityLabel!.isNotEmpty)
+              Text(
+                qualityLabel!,
+                style: textTheme.labelSmall?.copyWith(
+                  color: isPlaying ? colorScheme.primary : colorScheme.tertiary,
+                ),
+              ),
+            const SizedBox(width: 6),
+          ],
+          Expanded(
+            child: Text(
+              artist,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.bodySmall?.copyWith(
+                color: isPlaying ? colorScheme.primary : colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,

@@ -47,6 +47,9 @@ mixin _$SongItem {
   /// Duration in seconds.
   int get duration => throw _privateConstructorUsedError;
 
+  /// Audio quality code of the cached file (0 = not cached).
+  int get audioQuality => throw _privateConstructorUsedError;
+
   /// Local file path if cached.
   String? get localPath => throw _privateConstructorUsedError;
 
@@ -75,6 +78,7 @@ abstract class $SongItemCopyWith<$Res> {
       String? customArtist,
       String? coverUrl,
       int duration,
+      int audioQuality,
       String? localPath});
 }
 
@@ -102,6 +106,7 @@ class _$SongItemCopyWithImpl<$Res, $Val extends SongItem>
     Object? customArtist = freezed,
     Object? coverUrl = freezed,
     Object? duration = null,
+    Object? audioQuality = null,
     Object? localPath = freezed,
   }) {
     return _then(_value.copyWith(
@@ -141,6 +146,10 @@ class _$SongItemCopyWithImpl<$Res, $Val extends SongItem>
           ? _value.duration
           : duration // ignore: cast_nullable_to_non_nullable
               as int,
+      audioQuality: null == audioQuality
+          ? _value.audioQuality
+          : audioQuality // ignore: cast_nullable_to_non_nullable
+              as int,
       localPath: freezed == localPath
           ? _value.localPath
           : localPath // ignore: cast_nullable_to_non_nullable
@@ -167,6 +176,7 @@ abstract class _$$SongItemImplCopyWith<$Res>
       String? customArtist,
       String? coverUrl,
       int duration,
+      int audioQuality,
       String? localPath});
 }
 
@@ -192,6 +202,7 @@ class __$$SongItemImplCopyWithImpl<$Res>
     Object? customArtist = freezed,
     Object? coverUrl = freezed,
     Object? duration = null,
+    Object? audioQuality = null,
     Object? localPath = freezed,
   }) {
     return _then(_$SongItemImpl(
@@ -231,6 +242,10 @@ class __$$SongItemImplCopyWithImpl<$Res>
           ? _value.duration
           : duration // ignore: cast_nullable_to_non_nullable
               as int,
+      audioQuality: null == audioQuality
+          ? _value.audioQuality
+          : audioQuality // ignore: cast_nullable_to_non_nullable
+              as int,
       localPath: freezed == localPath
           ? _value.localPath
           : localPath // ignore: cast_nullable_to_non_nullable
@@ -252,6 +267,7 @@ class _$SongItemImpl extends _SongItem {
       this.customArtist,
       this.coverUrl,
       this.duration = 0,
+      this.audioQuality = 0,
       this.localPath})
       : super._();
 
@@ -295,13 +311,18 @@ class _$SongItemImpl extends _SongItem {
   @JsonKey()
   final int duration;
 
+  /// Audio quality code of the cached file (0 = not cached).
+  @override
+  @JsonKey()
+  final int audioQuality;
+
   /// Local file path if cached.
   @override
   final String? localPath;
 
   @override
   String toString() {
-    return 'SongItem(id: $id, bvid: $bvid, cid: $cid, originTitle: $originTitle, originArtist: $originArtist, customTitle: $customTitle, customArtist: $customArtist, coverUrl: $coverUrl, duration: $duration, localPath: $localPath)';
+    return 'SongItem(id: $id, bvid: $bvid, cid: $cid, originTitle: $originTitle, originArtist: $originArtist, customTitle: $customTitle, customArtist: $customArtist, coverUrl: $coverUrl, duration: $duration, audioQuality: $audioQuality, localPath: $localPath)';
   }
 
   @override
@@ -324,14 +345,27 @@ class _$SongItemImpl extends _SongItem {
                 other.coverUrl == coverUrl) &&
             (identical(other.duration, duration) ||
                 other.duration == duration) &&
+            (identical(other.audioQuality, audioQuality) ||
+                other.audioQuality == audioQuality) &&
             (identical(other.localPath, localPath) ||
                 other.localPath == localPath));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, bvid, cid, originTitle,
-      originArtist, customTitle, customArtist, coverUrl, duration, localPath);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      bvid,
+      cid,
+      originTitle,
+      originArtist,
+      customTitle,
+      customArtist,
+      coverUrl,
+      duration,
+      audioQuality,
+      localPath);
 
   /// Create a copy of SongItem
   /// with the given fields replaced by the non-null parameter values.
@@ -360,6 +394,7 @@ abstract class _SongItem extends SongItem {
       final String? customArtist,
       final String? coverUrl,
       final int duration,
+      final int audioQuality,
       final String? localPath}) = _$SongItemImpl;
   const _SongItem._() : super._();
 
@@ -401,6 +436,10 @@ abstract class _SongItem extends SongItem {
   /// Duration in seconds.
   @override
   int get duration;
+
+  /// Audio quality code of the cached file (0 = not cached).
+  @override
+  int get audioQuality;
 
   /// Local file path if cached.
   @override

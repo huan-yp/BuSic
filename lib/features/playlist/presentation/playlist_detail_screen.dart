@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/song_tile.dart';
+import '../../auth/application/auth_notifier.dart';
+import '../../download/application/download_notifier.dart';
+import '../../download/presentation/widgets/quality_select_dialog.dart';
 import '../../player/application/player_notifier.dart';
 import '../../player/domain/models/audio_track.dart';
 import '../../player/domain/models/play_mode.dart';
@@ -122,6 +125,8 @@ class PlaylistDetailScreen extends ConsumerWidget {
                         coverUrl: song.coverUrl,
                         duration: Formatters.formatDuration(Duration(seconds: song.duration)),
                         isPlaying: isCurrentSong && playerState.isPlaying,
+                        isCached: song.isCached,
+                        qualityLabel: song.isCached ? song.qualityLabel : null,
                         onTap: () {
                           if (isCurrentSong && playerState.isPlaying) {
                             ref.read(playerNotifierProvider.notifier).pause();
@@ -194,10 +199,77 @@ class PlaylistDetailScreen extends ConsumerWidget {
                 );
               },
             ),
+            ListTile(
+              leading: Icon(
+                song.isCached ? Icons.download_done : Icons.download,
+              ),
+              title: Text(song.isCached
+                  ? '${l10n.cached} (${song.qualityLabel})'
+                  : l10n.downloadSong),
+              onTap: song.isCached
+                  ? null
+                  : () {
+                      Navigator.pop(ctx);
+                      _showQualityDialog(context, ref, song);
+                    },
+            ),
           ],
         ),
       ),
     );
+  }
+
+  /// Show quality selection dialog and start download.
+  void _showQualityDialog(
+    BuildContext context,
+    WidgetRef ref,
+    SongItem song,
+  ) async {
+    final l10n = context.l10n;
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    try {
+      final qualities = await ref
+          .read(downloadNotifierProvider.notifier)
+          .getAvailableQualities(bvid: song.bvid, cid: song.cid);
+
+      if (qualities.isEmpty) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text(l10n.noQualities)),
+        );
+        return;
+      }
+
+      if (!context.mounted) return;
+
+      final isLoggedIn = ref.read(authNotifierProvider).value != null;
+
+      showDialog(
+        context: context,
+        builder: (_) => QualitySelectDialog(
+          qualities: qualities,
+          isLoggedIn: isLoggedIn,
+          onSelect: (selected) async {
+            scaffoldMessenger.showSnackBar(
+              SnackBar(content: Text(l10n.downloadStarted)),
+            );
+            await ref
+                .read(downloadNotifierProvider.notifier)
+                .downloadSongWithQuality(
+                  songId: song.id,
+                  bvid: song.bvid,
+                  cid: song.cid,
+                  quality: selected.quality,
+                  title: song.displayTitle,
+                );
+          },
+        ),
+      );
+    } catch (e) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('获取音质列表失败: $e')),
+      );
+    }
   }
 
   /// Play all songs sequentially from the first track.

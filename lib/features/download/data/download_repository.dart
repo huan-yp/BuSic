@@ -7,11 +7,13 @@ abstract class DownloadRepository {
   /// Start downloading audio for [songId] from [url] to [savePath].
   ///
   /// Creates a new download task and begins the download.
+  /// Optionally specify [quality] code to record in the song entry.
   /// Returns the created task's database ID.
   Future<int> startDownload({
     required int songId,
     required String url,
     required String savePath,
+    int quality = 0,
   });
 
   /// Cancel an active download by [taskId].

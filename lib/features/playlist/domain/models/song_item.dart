@@ -39,6 +39,9 @@ class SongItem with _$SongItem {
     /// Duration in seconds.
     @Default(0) int duration,
 
+    /// Audio quality code of the cached file (0 = not cached).
+    @Default(0) int audioQuality,
+
     /// Local file path if cached.
     String? localPath,
   }) = _SongItem;
@@ -51,6 +54,18 @@ class SongItem with _$SongItem {
 
   /// Whether the song has been cached locally.
   bool get isCached => localPath != null;
+
+  /// Human-readable quality label for the cached version.
+  String get qualityLabel {
+    switch (audioQuality) {
+      case 30216: return '64kbps';
+      case 30232: return '132kbps';
+      case 30280: return '192kbps';
+      case 30250: return 'Dolby';
+      case 30251: return 'Hi-Res';
+      default: return '';
+    }
+  }
 
   factory SongItem.fromJson(Map<String, dynamic> json) =>
       _$SongItemFromJson(json);
