@@ -121,7 +121,7 @@ class ParseNotifier extends _$ParseNotifier {
     final songIds = <int>[];
     for (final page in pages) {
       final songId = await _playlistRepository.upsertSong(
-        bvid: info!.bvid,
+        bvid: info.bvid,
         cid: page.cid,
         originTitle: pages.length > 1 ? page.partTitle : info.title,
         originArtist: info.owner,

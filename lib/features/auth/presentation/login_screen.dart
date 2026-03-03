@@ -70,7 +70,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
+    ref.watch(authNotifierProvider);
     final colorScheme = context.colorScheme;
 
     // If logged in, navigate back
