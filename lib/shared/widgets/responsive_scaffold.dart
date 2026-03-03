@@ -113,11 +113,14 @@ class ResponsiveScaffold extends StatelessWidget {
 
     // Mobile layout
     return Scaffold(
-      body: Column(
-        children: [
-          Expanded(child: navigationShell),
-          const PlayerBar(),
-        ],
+      body: SafeArea(
+        bottom: false, // NavigationBar handles bottom padding
+        child: Column(
+          children: [
+            Expanded(child: navigationShell),
+            const PlayerBar(),
+          ],
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentIdx,

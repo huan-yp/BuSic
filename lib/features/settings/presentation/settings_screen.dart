@@ -78,22 +78,30 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.palette_outlined),
             title: const Text('配色方案'),
-            trailing: DropdownButton<int>(
-              value: settings.themeSeedColor,
-              underline: const SizedBox.shrink(),
-              items: const [
-                DropdownMenuItem(value: 0xFF4CAF50, child: Text('绿色')),
-                DropdownMenuItem(value: 0xFFE91E63, child: Text('粉色')),
-                DropdownMenuItem(value: 0xFF9C27B0, child: Text('紫色')),
-                DropdownMenuItem(value: 0xFFFBC02D, child: Text('黄色')),
+            subtitle: Wrap(
+              spacing: 8,
+              children: [
+                for (final entry in const {
+                  0xFF4CAF50: '绿色',
+                  0xFFE91E63: '粉色',
+                  0xFF9C27B0: '紫色',
+                  0xFFFBC02D: '黄色',
+                }.entries)
+                  ChoiceChip(
+                    label: Text(entry.value),
+                    selected: settings.themeSeedColor == entry.key,
+                    onSelected: (_) {
+                      ref
+                          .read(settingsNotifierProvider.notifier)
+                          .setThemeSeedColor(entry.key);
+                    },
+                    avatar: CircleAvatar(
+                      backgroundColor: Color(entry.key),
+                      radius: 8,
+                    ),
+                    selectedColor: Color(entry.key).withValues(alpha: 0.3),
+                  ),
               ],
-              onChanged: (value) {
-                if (value != null) {
-                  ref
-                      .read(settingsNotifierProvider.notifier)
-                      .setThemeSeedColor(value);
-                }
-              },
             ),
           ),
 
